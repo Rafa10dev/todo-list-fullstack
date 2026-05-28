@@ -1,0 +1,23 @@
+# dependências Node
+node_modules
+
+# build do Next.js
+.next
+
+# variáveis de ambiente
+.env
+
+# build do Java
+target/
+
+# VSCode
+.vscode/
+
+# IntelliJ
+.idea/
+
+# logs
+*.log
+
+# sistema operacional
+.DS_Store
