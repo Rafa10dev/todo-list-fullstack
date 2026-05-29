@@ -7,6 +7,8 @@ import com.rafaelfelix.backend.entity.User;
 import com.rafaelfelix.backend.exception.ResourceNotFoundException;
 import com.rafaelfelix.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.rafaelfelix.backend.security.JwtService;
@@ -53,5 +55,15 @@ public class UserService {
         String token = jwtService.generateToken(user.getEmail());
 
         return new LoginResponseDTO(token);
+    }
+
+    public User getAuthenticatedUser() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        return repository.findByEmail(email).orElseThrow(() ->
+                new RuntimeException("Usuário não encontrado"));
     }
 }

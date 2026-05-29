@@ -1,6 +1,7 @@
 package com.rafaelfelix.backend.service;
 
 import com.rafaelfelix.backend.entity.Task;
+import com.rafaelfelix.backend.entity.User;
 import com.rafaelfelix.backend.exception.ResourceNotFoundException;
 import com.rafaelfelix.backend.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,23 +14,35 @@ import java.util.List;
 public class TaskService {
 
     private final TaskRepository repository;
+    private final UserService userService;
 
     public List<Task> findAll() {
-        return repository.findAll();
+        User authenticatedUser = userService.getAuthenticatedUser();
+
+        return repository.findByUser(authenticatedUser);
     }
 
     public Task create(Task task) {
+        User authenticatedUser = userService.getAuthenticatedUser();
+        task.setUser(authenticatedUser);
+
         return repository.save(task);
     }
 
     public void delete(Long id) {
-        repository.deleteById(id);
+        User authenticatedUser = userService.getAuthenticatedUser();
+
+        Task task = repository.findByIdAndUser(id, authenticatedUser).orElseThrow(() ->
+                new ResourceNotFoundException("Task não encontrada"));
+
+        repository.delete(task);
     }
 
     public Task update(Long id, Task task) {
+        User authenticatedUser = userService.getAuthenticatedUser();
 
-        Task existingTask = repository.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Tarefa não encontrada"));
+        Task existingTask = repository.findByIdAndUser(id, authenticatedUser).orElseThrow(() ->
+                new ResourceNotFoundException("Task não encontrada"));
 
         existingTask.setTitle(task.getTitle());
         existingTask.setDescription(task.getDescription());
@@ -39,7 +52,9 @@ public class TaskService {
     }
 
     public Task complete(Long id){
-        Task task = repository.findById(id)
+        User authenticatedUser = userService.getAuthenticatedUser();
+
+        Task task = repository.findByIdAndUser(id, authenticatedUser)
                 .orElseThrow(() -> new ResourceNotFoundException("Task não encontrada"));
 
         task.setCompleted(true);
