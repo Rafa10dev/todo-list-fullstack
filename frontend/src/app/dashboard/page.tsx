@@ -25,6 +25,7 @@ import {
     updateTask,
 } from '@/services/taskService';
 import { Task } from '@/types/Task';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 const createTaskSchema = z.object({
     title: z.string().min(3, 'Título muito curto!'),
@@ -35,12 +36,9 @@ type CreateTaskSchema = z.infer<typeof createTaskSchema>;
 
 const DashboardPage = () => {
     const router = useRouter();
+    const queryClient = useQueryClient();
 
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [isCreatingTask, setIsCreatingTask] = useState(false);
-    const [editingTaskId, setEditingTaskId] = useState<number | null>(
-        null
-    );
+    const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
 
@@ -52,15 +50,6 @@ const DashboardPage = () => {
         },
     });
 
-    const fetchTasks = async () => {
-        try {
-            const data = await getTasks();
-            setTasks(data);
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
     useEffect(() => {
         const token = localStorage.getItem('token');
 
@@ -68,8 +57,6 @@ const DashboardPage = () => {
             router.push('/login');
             return;
         }
-
-        fetchTasks();
     }, [router]);
 
     const handleLogout = () => {
@@ -77,81 +64,112 @@ const DashboardPage = () => {
         router.push('/login');
     };
 
-    const handleCreateTask = async (data: CreateTaskSchema) => {
-        try {
-            setIsCreatingTask(true);
+    const createTaskMutation = useMutation({
+        mutationFn: createTask,
 
-            const newTask = await createTask(data);
-
-            setTasks((prevTasks) => [newTask, ...prevTasks]);
-
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
             form.reset();
-
             toast.success('Task criada com sucesso!');
+        },
 
-        } catch (error) {
-            console.error(error);
-            toast.error('Erro ao criar a task.');
-        } finally {
-            setIsCreatingTask(false);
+        onError: () => {
+            toast.error('Erro ao criar a task. Tente novamente.');
+            console.error('Erro ao criar a task');
         }
-    };
+    });
+
+    const handleCreateTask = async (data: CreateTaskSchema) => {
+        createTaskMutation.mutate(data);    
+    }
+
+    const deleteTaskMutation = useMutation({
+        mutationFn: deleteTask,
+
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            toast.success('Task excluída com sucesso!');
+        },
+        
+        onError: () => {
+            toast.error('Erro ao excluir a task. Tente novamente.');
+            console.error('Erro ao excluir a task');
+        }
+    });
 
     const handleDeleteTask = async (id: number) => {
-        try {
-            await deleteTask(id);
-
-            setTasks((prevTasks) =>
-                prevTasks.filter((task) => task.id !== id)
-            );
-
-            toast.success('Task excluída com sucesso!');
-        } catch (error) {
-            console.error(error);
-            toast.error('Erro ao excluir a task.');
-        }
+        deleteTaskMutation.mutate(id);
     };
+
+    const completeTaskMutation = useMutation({
+        mutationFn: completeTask,
+
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        },
+
+        onError: () => {
+            toast.error('Erro ao atualizar a task. Tente novamente.');
+            console.error('Erro ao atualizar a task');
+        }
+    });
 
     const handleCompleteTask = async (id: number) => {
-        try {
-            const updatedTask = await completeTask(id);
-
-            setTasks((prevTasks) =>
-                prevTasks.map((task) =>
-                    task.id === id ? updatedTask : task
-                )
-            );
-
-            toast.success(`Task ${
-                updatedTask.completed ? 'concluída' : 'marcada como pendente'}!`);
-        } catch (error) {
-            console.error(error);
-            toast.error('Erro ao atualizar a task.');
-        }
+        completeTaskMutation.mutate(id);
     };
 
-    const handleUpdateTask = async (id: number) => {
-        try {
-            const updatedTask = await updateTask(id, {
-                title: editTitle,
-                description: editDescription,
-            });
+    const updateTaskMutation = useMutation({
+        mutationFn: ({ id, data }: { id: number, data: CreateTaskSchema }) => updateTask(id, data),
 
-            setTasks((prevTasks) =>
-                prevTasks.map((task) =>
-                    task.id === id ? updatedTask : task
-                )
-            );
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
 
             setEditingTaskId(null);
             setEditTitle('');
             setEditDescription('');
 
             toast.success('Task editada com sucesso!');
-        } catch (error) {
-            console.error(error);
-            toast.error('Erro ao editar a task.');
+        },
+
+        onError: () => {
+            toast.error('Erro ao editar a task. Tente novamente.');
+            console.error('Erro ao editar a task');
         }
+    });
+
+    const handleUpdateTask = async (id: number) => {
+        updateTaskMutation.mutate({ 
+            id,
+            data: { 
+                title: editTitle,
+                description: editDescription 
+            } 
+        });
+    }
+
+    const {
+        data: tasks = [],
+        isLoading,
+        error,
+    } = useQuery({
+        queryKey: ['tasks'],
+        queryFn: getTasks,
+    });
+
+    if (isLoading) {
+        return (
+            <main className="min-h-screen flex items-center justify-center">
+            <p>Carregando tasks...</p>
+            </main>
+        );
+    }
+
+    if (error) {
+        return (
+            <main className="min-h-screen flex items-center justify-center">
+            <p>Erro ao carregar tasks.</p>
+            </main>
+        );
     }
 
     return (
@@ -238,10 +256,10 @@ const DashboardPage = () => {
 
                         <Button
                             type="submit"
-                            disabled={isCreatingTask}
+                            disabled={createTaskMutation.isPending}
                             className="w-full"
                         >
-                            {isCreatingTask
+                            {createTaskMutation.isPending
                                 ? 'Criando...'
                                 : 'Criar task'}
                         </Button>
