@@ -1,6 +1,7 @@
 package com.rafaelfelix.backend.controller;
 
 import com.rafaelfelix.backend.dto.RegisterDTO;
+import com.rafaelfelix.backend.dto.UserRequestDTO;
 import com.rafaelfelix.backend.entity.User;
 import com.rafaelfelix.backend.service.UserService;
 import jakarta.validation.Valid;
@@ -19,12 +20,19 @@ public class AuthController {
     private final UserService service;
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@Valid @RequestBody RegisterDTO dto){
+    public ResponseEntity<UserRequestDTO> register(@Valid @RequestBody RegisterDTO dto){
         User user = service.register(dto);
+
+        UserRequestDTO reponse =
+                new UserRequestDTO(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail()
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(user);
+                .body(reponse);
     }
 
     @PostMapping("/login")

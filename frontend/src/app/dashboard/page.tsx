@@ -6,17 +6,6 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { toast } from 'sonner';
-
-import { Button } from '@/components/ui/button';
-import {
-    Field,
-    FieldContent,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import {
     completeTask,
     createTask,
@@ -24,15 +13,22 @@ import {
     getTasks,
     updateTask,
 } from '@/services/taskService';
-import { Task } from '@/types/Task';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { DashboardHeader } from './DashboardHeader';
+import { CreateTaskForm } from './CreateTaskForm';
+import { TaskList } from './TaskList';
+import { SearchTask } from './SearchTask';
+import { DashboardStats } from './DashboardStats';
+import { FilterTask } from '@/components/FilterTask';
+import { TaskSkeleton } from '@/components/TaskSkeleton';
+import { Spinner } from '@/components/spinner';
 
 const createTaskSchema = z.object({
     title: z.string().min(3, 'Título muito curto!'),
     description: z.string().min(3, 'Descrição muito curta!'),
 });
 
-type CreateTaskSchema = z.infer<typeof createTaskSchema>;
+export type CreateTaskSchema = z.infer<typeof createTaskSchema>;
 
 const DashboardPage = () => {
     const router = useRouter();
@@ -41,6 +37,8 @@ const DashboardPage = () => {
     const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
+    const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all'); 
 
     const form = useForm<CreateTaskSchema>({
         resolver: zodResolver(createTaskSchema),
@@ -79,7 +77,7 @@ const DashboardPage = () => {
         }
     });
 
-    const handleCreateTask = async (data: CreateTaskSchema) => {
+    const handleCreateTask = (data: CreateTaskSchema) => {
         createTaskMutation.mutate(data);    
     }
 
@@ -97,7 +95,7 @@ const DashboardPage = () => {
         }
     });
 
-    const handleDeleteTask = async (id: number) => {
+    const handleDeleteTask = (id: number) => {
         deleteTaskMutation.mutate(id);
     };
 
@@ -114,7 +112,7 @@ const DashboardPage = () => {
         }
     });
 
-    const handleCompleteTask = async (id: number) => {
+    const handleCompleteTask = (id: number) => {
         completeTaskMutation.mutate(id);
     };
 
@@ -137,7 +135,7 @@ const DashboardPage = () => {
         }
     });
 
-    const handleUpdateTask = async (id: number) => {
+    const handleUpdateTask = (id: number) => {
         updateTaskMutation.mutate({ 
             id,
             data: { 
@@ -150,7 +148,8 @@ const DashboardPage = () => {
     const {
         data: tasks = [],
         isLoading,
-        error,
+        isFetching,
+        error
     } = useQuery({
         queryKey: ['tasks'],
         queryFn: getTasks,
@@ -158,8 +157,12 @@ const DashboardPage = () => {
 
     if (isLoading) {
         return (
-            <main className="min-h-screen flex items-center justify-center">
-            <p>Carregando tasks...</p>
+            <main className="min-h-screen bg-background">
+                <DashboardHeader onLogout={handleLogout} />
+
+                <section className="container mx-auto p-6">
+                    <TaskSkeleton />
+                </section>
             </main>
         );
     }
@@ -172,215 +175,156 @@ const DashboardPage = () => {
         );
     }
 
+    const filteredTasks = tasks.filter((task) => {
+        const matchesSearch =
+            task.title.toLowerCase().includes(search.toLowerCase()) ||
+            task.description.toLowerCase().includes(search.toLowerCase());
+
+        const matchesFilter =
+            filter === "all"
+            ? true
+            : filter === "completed"
+            ? task.completed
+            : !task.completed;
+
+        return matchesSearch && matchesFilter;
+    });
+
     return (
-        <main className="min-h-screen bg-background">
-            <header className="border-b">
-                <div className="container mx-auto flex items-center justify-between p-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">ToDo App</h1>
+        <main className="relative min-h-screen overflow-hidden bg-background">
+            <div className="absolute inset-0 -z-10">
+                <div className="absolute left-0 top-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
 
-                        <p className="text-muted-foreground">
-                            Gerencie suas Tarefas
-                        </p>
-                    </div>
+                <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
 
-                    <Button
-                        variant="destructive"
-                        onClick={handleLogout}
+                <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+            </div>
+
+            <DashboardHeader onLogout={handleLogout} />
+
+            <section className="container mx-auto px-6 pt-8">
+                <div
+                    className="
+                        rounded-3xl
+                        border
+                        bg-card/40
+                        backdrop-blur-xl
+                        p-8
+                        mb-8
+                    "
+                >
+                    <span
+                        className="
+                            inline-flex
+                            items-center
+                            rounded-full
+                            border
+                            px-4
+                            py-2
+                            text-sm
+                            mb-4
+                        "
                     >
-                        Sair
-                    </Button>
+                        🚀 Bem-vindo ao TaskFlow
+                    </span>
+
+                    <h1
+                        className="
+                            text-4xl
+                            font-bold
+                            bg-linear-to-r
+                            from-cyan-400
+                            via-emerald-400
+                            to-violet-500
+                            bg-clip-text
+                            text-transparent
+                        "
+                    >
+                        Organize suas tarefas com eficiência
+                    </h1>
+
+                    <p className="mt-4 text-muted-foreground max-w-2xl">
+                        Crie, acompanhe e conclua tarefas em uma experiência moderna,
+                        rápida e intuitiva.
+                    </p>
                 </div>
-            </header>
+            </section>
 
             <section className="container mx-auto p-6">
-                <div className="rounded-2xl border p-6">
-                    <h2 className="text-2xl font-semibold mb-2">
-                        Minhas Tasks
-                    </h2>
 
-                    <form
-                        onSubmit={form.handleSubmit(handleCreateTask)}
-                        className="space-y-6 mb-8"
-                    >
-                        <FieldGroup>
-                            <Field>
-                                <FieldLabel>Título</FieldLabel>
+                <DashboardStats tasks={tasks} />
 
-                                <FieldContent>
-                                    <Input
-                                        placeholder="Digite o título da task"
-                                        {...form.register('title')}
-                                    />
-                                </FieldContent>
+                <FilterTask filter={filter} setFilter={setFilter} />
 
-                                <FieldDescription>
-                                    Nome da tarefa
-                                </FieldDescription>
+                <div className="
+                        rounded-3xl
+                        border
+                        bg-card/40
+                        backdrop-blur-xl
+                        p-8
+                        shadow-xl
+                    "
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <div>
+                            <h2 className="text-3xl font-bold">
+                                Minhas Tasks
+                            </h2>
 
-                                {form.formState.errors.title && (
-                                    <FieldError>
-                                        {form.formState.errors.title
-                                            .message}
-                                    </FieldError>
-                                )}
-                            </Field>
-
-                            <Field>
-                                <FieldLabel>Descrição</FieldLabel>
-
-                                <FieldContent>
-                                    <Input
-                                        placeholder="Digite a descrição"
-                                        {...form.register(
-                                            'description'
-                                        )}
-                                    />
-                                </FieldContent>
-
-                                <FieldDescription>
-                                    Descrição da tarefa
-                                </FieldDescription>
-
-                                {form.formState.errors.description && (
-                                    <FieldError>
-                                        {
-                                            form.formState
-                                                .errors
-                                                .description?.message
-                                        }
-                                    </FieldError>
-                                )}
-                            </Field>
-                        </FieldGroup>
-
-                        <Button
-                            type="submit"
-                            disabled={createTaskMutation.isPending}
-                            className="w-full"
-                        >
-                            {createTaskMutation.isPending
-                                ? 'Criando...'
-                                : 'Criar task'}
-                        </Button>
-                    </form>
-
-                    <div className="space-y-4">
-                        {tasks.length === 0 ? (
-                            <p className="text-muted-foreground">
-                                Nenhuma tarefa encontrada.
+                            <p className="text-muted-foreground text-sm">
+                                Gerencie e acompanhe suas atividades.
                             </p>
-                        ) : (
-                            tasks.map((task) => (
-                                <div
-                                    key={task.id}
-                                    className="border rounded-2xl p-4 bg-card flex items-center justify-between gap-4"
-                                >
-                                    <div className="flex-1 min-w-0">
-                                        {editingTaskId === task.id ? (
-                                            <div className="space-y-3">
-                                                <Input
-                                                    value={editTitle}
-                                                    onChange={(e) =>
-                                                        setEditTitle(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
+                        </div>
 
-                                                <Input
-                                                    value={editDescription}
-                                                    onChange={(e) =>
-                                                        setEditDescription(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <h3 className="font-semibold text-lg">
-                                                    {task.title}
-                                                </h3>
-
-                                                <p className="text-muted-foreground">
-                                                    {task.description}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-3">
-                                        {editingTaskId === task.id ? (
-                                          <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleUpdateTask(task.id)}
-                                            >
-                                                Salvar
-                                            </Button>
-
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setEditingTaskId(null)
-                                                    setEditTitle('')
-                                                    setEditDescription('')
-                                                }}
-                                            >
-                                                Cancelar
-                                            </Button>
-                                          </div>
-                                        ) : (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                setEditingTaskId(task.id);
-                                                setEditTitle(task.title);
-                                                setEditDescription(
-                                                    task.description
-                                                );
-                                            }}
-                                        >
-                                            Editar
-                                        </Button>
-                                        )}
-
-                                        <Button
-                                            variant={
-                                                task.completed
-                                                    ? 'default'
-                                                    : 'secondary'
-                                            }
-                                            size="sm"
-                                            onClick={() =>
-                                                handleCompleteTask(
-                                                    task.id
-                                                )
-                                            }
-                                        >
-                                            {task.completed
-                                                ? '✅ Concluída'
-                                                : '⏳ Pendente'}
-                                        </Button>
-
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                                handleDeleteTask(task.id)
-                                            }
-                                        >
-                                            Excluir
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))
+                        {isFetching && (
+                            <div className="
+                                    flex
+                                    items-center
+                                    gap-2
+                                    rounded-full
+                                    border
+                                    px-4
+                                    py-2
+                                    text-sm
+                                    bg-card/50
+                                    backdrop-blur
+                                "
+                            >
+                                <Spinner size={20}/>
+                                Atualizando...
+                            </div>
                         )}
                     </div>
+
+                    <SearchTask search={search} setSearch={setSearch} />
+
+                    <CreateTaskForm 
+                        form={form}
+                        onSubmit={handleCreateTask}
+                        isPending={createTaskMutation.isPending}
+                    />
+
+                    <TaskList 
+                        tasks={filteredTasks}
+                        editingTaskId={editingTaskId}
+                        editTitle={editTitle}
+                        editDescription={editDescription}
+                        setEditTitle={setEditTitle}
+                        setEditDescription={setEditDescription}
+                        onSave={handleUpdateTask}
+                        onDelete={handleDeleteTask}
+                        onComplete={handleCompleteTask}
+                        onStartEdit={(task) => {
+                            setEditingTaskId(task.id);
+                            setEditTitle(task.title);
+                            setEditDescription(task.description);
+                        }}
+                        onCancelEdit={() => {
+                            setEditingTaskId(null);
+                            setEditTitle('');
+                            setEditDescription('');
+                        }}
+                    />
                 </div>
             </section>
         </main>

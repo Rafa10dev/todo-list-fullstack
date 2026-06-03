@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { CheckCircle2, CheckSquare, MoonStar, Rocket } from 'lucide-react';
+import { ThemeToggle } from '@/components/toggle-theme';
 
 export default function HomePage() {
     return (
@@ -17,21 +19,34 @@ export default function HomePage() {
             </div>
 
             {/* Navbar */}
-            <header className="flex items-center justify-between px-8 py-6">
-                <motion.h1
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="text-2xl font-bold tracking-tight"
-                >
-                    TaskFlow
-                </motion.h1>
+            <header className="flex items-center justify-between px-8 py-6 border-b border-border/50 backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                    <CheckSquare 
+                        className="
+                            h-6 
+                            w-6 
+                            text-cyan-500
+                            drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]
+                        " 
+                    />
+
+                    <motion.h1
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="text-2xl font-bold tracking-tight"
+                    >
+                        TaskFlow
+                    </motion.h1>
+                </div>
 
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
+                    className="flex items-center gap-4"
                 >
+                    <ThemeToggle />
                     <Link href="/login">
                         <Button variant="outline">Login</Button>
                     </Link>
@@ -44,8 +59,24 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="max-w-4xl"
+                    className="max-w-5xl"
                 >
+                    <div className="
+                        inline-flex
+                        items-center
+                        gap-2
+                        rounded-full
+                        border
+                        px-4
+                        py-2
+                        text-sm
+                        mb-6
+                        bg-card/50
+                        backdrop-blur
+                        mt-6
+                    ">
+                        ✨ Nova experiência de produtividade
+                    </div>
                     <motion.h2
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -72,17 +103,41 @@ export default function HomePage() {
                         transition={{ delay: 0.7 }}
                         className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
                     >
-                        <Link href="/login">
-                            <Button size="lg" className="h-12 px-8 text-base">
-                                Começar Agora
+                        <Link href="/register">
+                            <Button
+                                size="lg"
+                                className="
+                                    h-14
+                                    px-10
+                                    rounded-xl
+                                    bg-linear-to-r
+                                    from-cyan-500
+                                    to-violet-500
+                                    shadow-lg
+                                    shadow-cyan-500/20
+                                    hover:scale-105
+                                    transition-all
+                                    duration-300
+                                "
+                            >
+                                Criar Conta
                             </Button>
                         </Link>
 
                         <Link href="/login">
                             <Button
-                                variant="secondary"
                                 size="lg"
-                                className="h-12 px-8 text-base"
+                                variant="secondary"
+                                className="
+                                h-14
+                                px-10
+                                rounded-xl
+                                border
+                                bg-card/50
+                                backdrop-blur
+                                hover:scale-105
+                                transition
+                                "
                             >
                                 Fazer Login
                             </Button>
@@ -98,9 +153,24 @@ export default function HomePage() {
                             duration: 4,
                             repeat: Infinity,
                         }}
-                        className="rounded-2xl border border-white/10 bg-card/60 p-6 shadow-2xl backdrop-blur"
+                        className="
+                            rounded-2xl
+                            border
+                            border-white/10
+                            bg-card/40
+                            p-6
+                            shadow-2xl
+                            backdrop-blur
+                            hover:scale-105
+                            transition-all
+                            duration-300
+                        "
                     >
-                        <p className="text-lg font-semibold">✔ Criar tarefas</p>
+                        <CheckCircle2 className="h-8 w-8 text-emerald-500 mb-3" />
+
+                        <p className="text-lg font-semibold">
+                            Criar tarefas
+                        </p>
 
                         <p className="mt-2 text-sm text-muted-foreground">
                             Organize todas suas atividades facilmente.
@@ -113,10 +183,23 @@ export default function HomePage() {
                             duration: 5,
                             repeat: Infinity,
                         }}
-                        className="rounded-2xl border border-white/10 bg-card/60 p-6 shadow-2xl backdrop-blur"
+                        className="
+                            rounded-2xl
+                            border
+                            border-white/10
+                            bg-card/40
+                            p-6
+                            shadow-2xl
+                            backdrop-blur
+                            hover:scale-105
+                            transition-all
+                            duration-300
+                        "
                     >
+                        <Rocket className="h-8 w-8 text-cyan-500 mb-3" />
+
                         <p className="text-lg font-semibold">
-                            🚀 Alta produtividade
+                            Alta produtividade
                         </p>
 
                         <p className="mt-2 text-sm text-muted-foreground">
@@ -130,10 +213,23 @@ export default function HomePage() {
                             duration: 6,
                             repeat: Infinity,
                         }}
-                        className="rounded-2xl border border-white/10 bg-card/60 p-6 shadow-2xl backdrop-blur"
+                        className="
+                            rounded-2xl
+                            border
+                            border-white/10
+                            bg-card/40
+                            p-6
+                            shadow-2xl
+                            backdrop-blur
+                            hover:scale-105
+                            transition-all
+                            duration-300
+                        "
                     >
+                        <MoonStar className="h-8 w-8 text-violet-500 mb-3" />
+
                         <p className="text-lg font-semibold">
-                            🌙 Dark mode moderno
+                            Dark Mode Moderno
                         </p>
 
                         <p className="mt-2 text-sm text-muted-foreground">

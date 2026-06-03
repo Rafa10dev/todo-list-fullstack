@@ -4,6 +4,8 @@ import com.rafaelfelix.backend.dto.LoginDTO;
 import com.rafaelfelix.backend.dto.LoginResponseDTO;
 import com.rafaelfelix.backend.dto.RegisterDTO;
 import com.rafaelfelix.backend.entity.User;
+import com.rafaelfelix.backend.exception.EmailAlreadyExistsException;
+import com.rafaelfelix.backend.exception.InvalidCredentialsException;
 import com.rafaelfelix.backend.exception.ResourceNotFoundException;
 import com.rafaelfelix.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,13 @@ public class UserService {
     private final JwtService jwtService;
 
     public User register(RegisterDTO dto){
-        String encryptedPassword = passwordEncoder.encode(dto.getPassword());
+
+        if(repository.findByEmail(dto.getEmail()).isPresent()){
+            throw new EmailAlreadyExistsException("Email já cadastrado");
+        }
+
+        String encryptedPassword =
+                passwordEncoder.encode(dto.getPassword());
 
         User user = User.builder()
                 .name(dto.getName())
@@ -40,7 +48,7 @@ public class UserService {
         User user = repository
                 .findByEmail(dto.getEmail())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Usuário não encontrado")
+                        new InvalidCredentialsException("Email ou senha inválidos")
                 );
 
         boolean passwordMatches = passwordEncoder.matches(
@@ -49,7 +57,7 @@ public class UserService {
         );
 
         if(!passwordMatches){
-            throw new RuntimeException("Senha inválida");
+            throw new InvalidCredentialsException("Email ou senha inválidos");
         }
 
         String token = jwtService.generateToken(user.getEmail());
@@ -64,6 +72,6 @@ public class UserService {
         String email = authentication.getName();
 
         return repository.findByEmail(email).orElseThrow(() ->
-                new RuntimeException("Usuário não encontrado"));
+                new InvalidCredentialsException("Email ou senha inválidos"));
     }
 }

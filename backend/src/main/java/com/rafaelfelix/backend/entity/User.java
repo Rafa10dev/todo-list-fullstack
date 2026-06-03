@@ -1,5 +1,6 @@
 package com.rafaelfelix.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,11 +20,13 @@ public class User {
 
     private String name;
 
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<Task> tasks;
 }
